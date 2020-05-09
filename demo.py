@@ -4,20 +4,20 @@
 from __future__ import division, print_function, absolute_import
 
 from timeit import time
-import warnings
+
 import cv2
+import imutils.video
 import numpy as np
 from PIL import Image
-from yolo import YOLO
 
-from deep_sort import preprocessing
 from deep_sort import nn_matching
+from deep_sort import preprocessing
 from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
 from tools import generate_detections as gdet
-import imutils.video
-from videocaptureasync import VideoCaptureAsync
 from tools.time_utils import get_current_ms
+from videocaptureasync import VideoCaptureAsync
+from yolo import YOLO
 
 
 def main(yolo):
@@ -37,7 +37,7 @@ def main(yolo):
     asyncVideo_flag = False
     showImg_flag = True
 
-    file_path = 'C:\\Users\\Divided\\Desktop\\test_video.mp4'
+    file_path = 'C:\\Users\\Divided\\Desktop\\test_vid.mp4'
     if asyncVideo_flag:
         video_capture = VideoCaptureAsync(file_path)
     else:
@@ -66,6 +66,7 @@ def main(yolo):
         if ret != True:
             break
 
+        overlay = frame.copy()
         t1 = time.time()
 
         image = Image.fromarray(frame[..., ::-1])  # bgr to rgb
@@ -104,20 +105,35 @@ def main(yolo):
 
         postprocess_start_time = get_current_ms()
 
+        for track in tracker.tracks:
+            if not track.is_confirmed() or track.time_since_update > 1:
+                continue
+            track_bbox = track.to_tlbr()
+            cv2.rectangle(frame, (int(track_bbox[0]), int(track_bbox[1])),
+                          (int(track_bbox[2]), int(track_bbox[3])), (255, 255, 255), 1)
+
+            if track.det_hist:
+                det_curr = track.det_hist[-1]
+                det_bbox = det_curr.to_tlbr()
+                score = "%.2f" % round(det_curr.confidence, 2)
+                cv2.rectangle(overlay, (int(det_bbox[0]), int(det_bbox[1])), (int(det_bbox[2]), int(det_bbox[3])),
+                              track.color, 2)
+                cv2.putText(overlay, score, (int(det_bbox[0]) + 5, int(det_bbox[3]) - 5), 0, 0.5, (255, 255, 255),
+                            2)
+                cv2.putText(overlay, str(track.track_id), (int(det_bbox[0]) + 5, int(det_bbox[1]) - 5), 0, 0.5,
+                            (255, 255, 255), 2)
+
+                # centroid = det_curr.get_centroid()
+
+                # cv2.circle(overlay, (int(centroid[0]), int(centroid[1])), radius=3,
+                #           color=(0, 0, 255), thickness=-1)
+
+        alpha = 0.5  # Transparency factor.
+
+        # Following line overlays transparent rectangle over the image
+        frame = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
+
         if showImg_flag:
-            for track in tracker.tracks:
-                if not track.is_confirmed() or track.time_since_update > 1:
-                    continue
-                bbox = track.to_tlbr()
-                cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255, 255, 255), 2)
-                cv2.putText(frame, str(track.track_id), (int(bbox[0]), int(bbox[1])), 0, 5e-3 * 200, (0, 255, 0), 2)
-
-            for det in detections:
-                bbox = det.to_tlbr()
-                score = "%.2f" % round(det.confidence * 100, 2)
-                cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255, 0, 0), 2)
-                cv2.putText(frame, score + '%', (int(bbox[0]), int(bbox[3])), 0, 5e-3 * 130, (0, 255, 0), 2)
-
             cv2.imshow('', frame)
 
         postprocess_time = get_current_ms() - postprocess_start_time

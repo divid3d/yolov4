@@ -1,5 +1,6 @@
 # vim: expandtab:ts=4:sw=4
-
+from deep_sort import utils
+from deep_sort.utils import gen_random_color as grc
 
 class TrackState:
     """
@@ -79,6 +80,8 @@ class Track:
 
         self._n_init = n_init
         self._max_age = max_age
+        self.color = grc()
+        self.det_hist = []
 
     def to_tlwh(self):
         """Get current position in bounding box format `(top left x, top left y,

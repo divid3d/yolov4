@@ -47,3 +47,15 @@ class Detection(object):
         ret[:2] += ret[2:] / 2
         ret[2] /= ret[3]
         return ret
+
+    def get_centroid(self):
+        ret = self.tlwh.copy()
+        return ret[0] + ret[2] / 2, ret[1] + ret[3] / 2
+
+    def get_lower_centroid(self):
+        ret = self.tlwh.copy()
+        return ret[0] + ret[2] / 2, ret[1] + ret[3]
+
+    def get_upper_centroid(self):
+        ret = self.tlwh.copy()
+        return ret[0] + ret[2] / 2, ret[1]

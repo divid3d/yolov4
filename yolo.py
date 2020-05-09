@@ -16,12 +16,12 @@ from yolo4.utils import letterbox_image
 
 class YOLO(object):
     def __init__(self):
-        self.model_path = 'model_data/yolo4_custom_final.h5'
+        self.model_path = 'model_data/yolo4_custom.h5'
         self.anchors_path = 'model_data/yolo_anchors.txt'
         self.classes_path = 'model_data/obj.names'
         self.gpu_num = 1
-        self.score = 0.5
-        self.iou = 0.5
+        self.score = 0.4
+        self.iou = 0.4
         self.class_names = self._get_class()
         self.anchors = self._get_anchors()
         self.sess = K.get_session()

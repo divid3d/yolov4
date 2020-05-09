@@ -41,6 +41,7 @@ class Tracker:
         self.metric = metric
         self.max_iou_distance = max_iou_distance
         self.max_age = max_age
+        self.max_hist = 20
         self.n_init = n_init
 
         self.kf = kalman_filter.KalmanFilter()
@@ -72,6 +73,10 @@ class Tracker:
         for track_idx, detection_idx in matches:
             self.tracks[track_idx].update(
                 self.kf, detections[detection_idx])
+            if len(self.tracks[track_idx].det_hist) >= self.max_hist:
+                del self.tracks[track_idx].det_hist[0]
+
+            self.tracks[track_idx].det_hist.append(detections[detection_idx])
         for track_idx in unmatched_tracks:
             self.tracks[track_idx].mark_missed()
         for detection_idx in unmatched_detections:
